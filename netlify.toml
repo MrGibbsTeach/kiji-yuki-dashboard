@@ -1,0 +1,14 @@
+# Kiji Yuki Dashboard — Netlify config
+# This proxies Google Calendar server-side so there are no CORS issues
+
+[[redirects]]
+  from = "/cal"
+  to = "https://calendar.google.com/calendar/ical/de6c610c4aea81c517b30af77ace0284a05087720385ef239e02a796987d2620%40group.calendar.google.com/public/basic.ics"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/fx"
+  to = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/aud.json"
+  status = 200
+  force = true

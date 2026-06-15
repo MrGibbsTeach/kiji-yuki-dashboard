@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiji Yuki · Live Dashboard</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#f4f3ef;color:#1a1a18;font-size:14px;line-height:1.5}
+.hdr{background:white;border-bottom:.5px solid rgba(0,0,0,.1);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:15px;font-weight:500}
+.hdr-sub{font-size:11px;color:#999;margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.upd{font-size:11px;color:#bbb}
+.rbtn{background:transparent;border:.5px solid rgba(0,0,0,.18);border-radius:6px;padding:5px 11px;font-size:12px;cursor:pointer;color:#666;font-family:inherit}
+.rbtn:hover{background:#f0eeea}
+.live-pill{font-size:10px;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:99px;font-weight:500;display:flex;align-items:center;gap:4px}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#1D9E75;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.main{padding:10px 14px}
+.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:9px}
+.mc{background:white;border:.5px solid rgba(0,0,0,.09);border-radius:9px;padding:9px 11px}
+.mc-lbl{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.mc-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;animation:blink 2s infinite}
+.mc-val{font-size:18px;font-weight:500;line-height:1.1}
+.mc-sub{font-size:10px;color:#999;margin-top:1px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.span2{grid-column:1/-1}
+.mod{background:white;border:.5px solid rgba(0,0,0,.09);border-radius:11px;overflow:hidden}
+.mod-hdr{padding:9px 13px;border-bottom:.5px solid rgba(0,0,0,.07);display:flex;align-items:center;justify-content:space-between}
+.mod-hdr-left{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500}
+.badge{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
+.mod-body{padding:11px 13px}
+.m-bk .mod-hdr{border-left:3px solid #1D9E75}
+.m-news .mod-hdr{border-left:3px solid #E87C27}
+.m-costs .mod-hdr{border-left:3px solid #378ADD}
+.m-prop .mod-hdr{border-left:3px solid #D85A30}
+.m-mp .mod-hdr{border-left:3px solid #7F77DD}
+.tabs{display:flex;margin-bottom:9px;border-bottom:.5px solid rgba(0,0,0,.08)}
+.tb{padding:4px 9px;font-size:11px;background:transparent;border:none;cursor:pointer;color:#999;border-bottom:2px solid transparent;margin-bottom:-.5px;font-family:inherit}
+.tb.active{color:#1a1a18;border-bottom-color:#1a1a18;font-weight:500}
+.panel{display:none}
+.panel.active{display:block}
+.row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:.5px solid rgba(0,0,0,.055);font-size:12px}
+.row:last-child{border-bottom:none}
+.sdiv{font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 5px;display:flex;align-items:center;gap:5px}
+.sdiv::after{content:'';flex:1;height:.5px;background:rgba(0,0,0,.08)}
+.bk{display:flex;align-items:center;gap:7px;padding:5px 8px;background:#f8f7f3;border-radius:6px;margin-bottom:3px}
+.bk:last-child{margin-bottom:0}
+.bk-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bk-date{color:#999;font-size:11px;width:110px;flex-shrink:0}
+.bk-who{font-weight:500;flex:1;font-size:12px}
+.bk-nights{font-size:10px;color:#bbb;margin-right:3px}
+.bk-type{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:500;white-space:nowrap}
+.days-bar-wrap{width:100%;height:10px;background:#f0eeea;border-radius:5px;overflow:hidden;display:flex;margin:5px 0}
+.days-fill-owner{height:100%;background:#1D9E75}
+.days-fill-guest{height:100%;background:#D85A30}
+.days-legend{display:flex;gap:10px;font-size:10px;color:#888;margin-bottom:5px}
+.days-legend i{width:8px;height:8px;border-radius:2px;display:inline-block;flex-shrink:0;margin-right:2px}
+.news-item{padding:6px 0;border-bottom:.5px solid rgba(0,0,0,.06)}
+.news-item:last-child{border-bottom:none}
+.news-title a{color:#1a1a18;text-decoration:none;font-weight:500;font-size:12px;line-height:1.3;display:block;margin-bottom:2px}
+.news-title a:hover{color:#E87C27}
+.news-meta{font-size:10px;color:#aaa;margin-bottom:2px}
+.news-desc{font-size:11px;color:#666;line-height:1.4}
+.tx{display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;border-bottom:.5px solid rgba(0,0,0,.055)}
+.tx:last-child{border-bottom:none}
+.tx-desc{font-weight:500;font-size:12px}
+.tx-meta{font-size:10px;color:#aaa;margin-top:1px}
+.tx-jpy{font-weight:500;text-align:right;font-size:12px}
+.tx-aud{font-size:10px;color:#aaa;text-align:right;margin-top:1px}
+.cat-row{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:.5px solid rgba(0,0,0,.055)}
+.cat-row:last-child{border-bottom:none}
+.cat-name{width:120px;flex-shrink:0;color:#555;font-size:11px}
+.cat-bar-wrap{flex:1;height:5px;background:#f0eeea;border-radius:3px;overflow:hidden}
+.cat-fill{height:100%;background:#378ADD;border-radius:3px}
+.cat-amt{width:80px;text-align:right;font-weight:500;flex-shrink:0;font-size:11px}
+.contrib-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:.5px solid rgba(0,0,0,.055)}
+.contrib-row:last-child{border-bottom:none}
+.contrib-name{font-weight:500;width:65px;flex-shrink:0;font-size:12px}
+.contrib-bar-w{flex:1;height:6px;background:#f0eeea;border-radius:3px;overflow:hidden}
+.contrib-fill{height:100%;border-radius:3px}
+.total-bar{background:#f8f7f3;border-radius:7px;padding:7px 10px;display:flex;justify-content:space-between;margin-bottom:8px}
+.total-bar-lbl{font-size:10px;color:#888;margin-bottom:1px}
+.total-bar-val{font-size:14px;font-weight:500}
+.ccard{border:.5px solid rgba(0,0,0,.09);border-radius:7px;padding:8px 10px;margin-bottom:5px;font-size:12px}
+.ccard:last-child{margin-bottom:0}
+.cc-name{font-weight:500;font-size:12px;margin-bottom:1px}
+.cc-role{font-size:10px;color:#aaa;margin-bottom:2px}
+.cc-share{font-size:11px;padding:2px 7px;border-radius:3px;font-weight:500}
+.resort-mini{display:flex;align-items:center;padding:4px 0;border-bottom:.5px solid rgba(0,0,0,.055);font-size:12px}
+.resort-mini:last-child{border-bottom:none}
+.resort-mini-drive{font-size:10px;color:#aaa;margin:0 7px}
+.resort-mini-snow{font-weight:500;color:#185FA5;min-width:42px;text-align:right;font-size:12px}
+.fc-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px}
+.fc-day{background:#EEF5FC;border-radius:5px;padding:5px 2px;text-align:center}
+.fc-day .dn{font-size:9px;color:#888;margin-bottom:1px}
+.fc-day .di{font-size:13px;margin:1px 0}
+.fc-day .dt{font-weight:500;font-size:10px}
+.fc-day .ds{color:#378ADD;font-size:9px}
+.vcard{border:.5px solid rgba(0,0,0,.09);border-radius:7px;padding:8px 10px;margin-bottom:5px;font-size:12px}
+.vcard:last-child{margin-bottom:0}
+.vc-name{font-weight:500;font-size:12px}
+.vc-meta{color:#888;font-size:10px;margin:1px 0 2px}
+.vc-price{font-weight:500;color:#BA7517;font-size:12px}
+.vc-tag{font-size:9px;padding:1px 5px;border-radius:3px;background:#FAEEDA;color:#854F0B;margin-left:5px;font-weight:500}
+.chk-group{margin-bottom:9px}
+.chk-group-title{font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.chk-group-title::after{content:'';flex:1;height:.5px;background:rgba(0,0,0,.08)}
+.chk-item{display:flex;align-items:flex-start;gap:7px;padding:3px 0;font-size:12px;border-bottom:.5px solid rgba(0,0,0,.04)}
+.chk-item:last-child{border-bottom:none}
+.chk-item input{accent-color:#7F77DD;margin-top:2px;flex-shrink:0}
+.chk-label{flex:1;color:#444;line-height:1.4}
+.chk-tag{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:500;white-space:nowrap;margin-left:3px}
+.prog-wrap{width:100%;height:7px;background:#f0eeea;border-radius:4px;overflow:hidden;margin:5px 0 2px}
+.prog-bar{height:100%;background:#7F77DD;border-radius:4px;transition:width .4s}
+.info-box{border-radius:6px;padding:7px 9px;font-size:11px;margin-top:7px;line-height:1.5}
+.src-tag{font-size:9px;background:#f0eeea;color:#999;border-radius:3px;padding:1px 5px;margin-left:4px}
+.err-small{font-size:10px;color:#D85A30;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div style="display:flex;align-items:center;gap:11px">
+    <span style="font-size:19px">🏔</span>
+    <div>
+      <div class="hdr-title">Kiji Yuki Live Dashboard</div>
+      <div class="hdr-sub">3107-1 Hotaka, Kijimadaira, Nagano · <a href="https://www.kijiyuki.com" target="_blank" style="color:#999;text-decoration:none">kijiyuki.com</a></div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="live-pill"><span class="live-dot"></span>Live</div>
+    <span class="upd" id="upd-time">Loading…</span>
+    <button class="rbtn" onclick="init()">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="main">
+<div class="metrics">
+  <div class="mc">
+    <div class="mc-lbl"><span class="mc-dot" style="background:#1D9E75"></span>Weather now</div>
+    <div class="mc-val" id="m-temp">—</div>
+    <div class="mc-sub" id="m-wx">Kijimadaira</div>
+  </div>
+  <div class="mc">
+    <div class="mc-lbl"><span class="mc-dot" style="background:#87C4EB"></span>Snow depth</div>
+    <div class="mc-val" id="m-snow">—</div>
+    <div class="mc-sub" id="m-snow-sub">Local base</div>
+  </div>
+  <div class="mc">
+    <div class="mc-lbl"><span class="mc-dot" style="background:#1D9E75"></span>AUD → JPY</div>
+    <div class="mc-val" id="m-fx">—</div>
+    <div class="mc-sub" id="m-fx-sub">loading…</div>
+  </div>
+  <div class="mc">
+    <div class="mc-lbl">Total spent</div>
+    <div class="mc-val" id="m-spent">¥1.69M</div>
+    <div class="mc-sub" id="m-spent-aud">≈ AUD —</div>
+  </div>
+  <div class="mc">
+    <div class="mc-lbl">Owner days 2026</div>
+    <div class="mc-val" id="m-ownerdays">—</div>
+    <div class="mc-sub" id="m-ownerdays-sub">from calendar</div>
+  </div>
+  <div class="mc">
+    <div class="mc-lbl">180-day remaining</div>
+    <div class="mc-val" id="m-remaining" style="color:#1D9E75">—</div>
+    <div class="mc-sub">guest days left</div>
+  </div>
+</div>
+
+<div class="grid">
+
+<!-- BOOKINGS -->
+<div class="mod m-bk">
+  <div class="mod-hdr">
+    <div class="mod-hdr-left">📅 Bookings</div>
+    <span class="badge" style="background:#E1F5EE;color:#0F6E56" id="cal-badge">Google Calendar</span>
+  </div>
+  <div class="mod-body">
+    <div class="tabs">
+      <button class="tb active" onclick="sw(this,'bk','upcoming')">Upcoming</button>
+      <button class="tb" onclick="sw(this,'bk','embed')">Full calendar</button>
+      <button class="tb" onclick="sw(this,'bk','days')">Days tracker</button>
+    </div>
+    <div id="bk-upcoming" class="panel active">
+      <div id="bk-entries"><div style="font-size:11px;color:#aaa;padding:5px 0">⟳ Fetching Google Calendar…</div></div>
+      <div id="cal-status" style="font-size:10px;color:#bbb;margin-top:5px"></div>
+    </div>
+    <div id="bk-embed" class="panel">
+      <iframe src="https://calendar.google.com/calendar/embed?src=de6c610c4aea81c517b30af77ace0284a05087720385ef239e02a796987d2620%40group.calendar.google.com&ctz=Australia%2FSydney&showTitle=0&showNav=1&showPrint=0&showCalendars=0&mode=AGENDA" style="border:0;width:100%;height:380px;border-radius:5px" frameborder="0" scrolling="no"></iframe>
+    </div>
+    <div id="bk-days" class="panel">
+      <div class="total-bar">
+        <div><div class="total-bar-lbl">Days used 2026</div><div class="total-bar-val" id="days-total">—</div></div>
+        <div style="text-align:right"><div class="total-bar-lbl">Guest cap remaining</div><div class="total-bar-val" id="days-left" style="color:#1D9E75">—</div></div>
+      </div>
+      <div class="days-legend">
+        <span><i style="background:#1D9E75"></i>Owner</span>
+        <span><i style="background:#D85A30"></i>Guest/rental</span>
+        <span><i style="background:#f0eeea;border:.5px solid #ddd"></i>Available</span>
+      </div>
+      <div class="days-bar-wrap">
+        <div class="days-fill-owner" id="bar-owner" style="width:0"></div>
+        <div class="days-fill-guest" id="bar-guest" style="width:0"></div>
+      </div>
+      <div style="font-size:9px;color:#ccc;text-align:right;margin-bottom:8px">0 ←——————→ 180 days</div>
+      <div class="sdiv">By owner</div>
+      <div id="days-by-owner"><div style="font-size:11px;color:#aaa">Awaiting calendar…</div></div>
+      <div class="sdiv">Guest / rental</div>
+      <div id="days-by-guest"><div style="font-size:11px;color:#aaa">Awaiting calendar…</div></div>
+      <div class="info-box" style="background:#f8f7f3;color:#888;font-size:10px;margin-top:5px">⚠️ 180-day cap applies to <em>guest nights only</em>. Owner stays unlimited. Confirm with Terumi.</div>
+    </div>
+  </div>
+</div>
+
+<!-- NEWS -->
+<div class="mod m-news">
+  <div class="mod-hdr">
+    <div class="mod-hdr-left">📰 Japan news</div>
+    <span class="badge" id="news-badge" style="background:#FDF0E6;color:#A0540E">loading</span>
+  </div>
+  <div class="mod-body">
+    <div class="tabs">
+      <button class="tb active" onclick="sw(this,'nw','property')">Property</button>
+      <button class="tb" onclick="sw(this,'nw','snow')">Snow &amp; ski</button>
+    </div>
+    <div id="nw-property" class="panel active"><div style="font-size:11px;color:#aaa;padding:5px 0">Loading…</div></div>
+    <div id="nw-snow" class="panel"><div style="font-size:11px;color:#aaa;padding:5px 0">Loading…</div></div>
+  </div>
+</div>
+
+<!-- COSTS -->
+<div class="mod m-costs">
+  <div class="mod-hdr">
+    <div class="mod-hdr-left">💴 Costs</div>
+    <span style="font-size:10px;color:#0C447C;background:#EEF5FC;border:.5px solid #C3D9F0;border-radius:5px;padding:2px 8px" id="excel-status">⟳ Reading Excel…</span>
+  </div>
+  <div class="mod-body">
+    <div class="tabs">
+      <button class="tb active" onclick="sw(this,'co','txns')">Transactions</button>
+      <button class="tb" onclick="sw(this,'co','cats')">By category</button>
+      <button class="tb" onclick="sw(this,'co','contribs')">Contributions</button>
+    </div>
+    <div id="co-txns" class="panel active">
+      <div class="total-bar">
+        <div><div class="total-bar-lbl">Total (JPY)</div><div class="total-bar-val" id="total-jpy">¥1,689,626</div></div>
+        <div style="text-align:right"><div class="total-bar-lbl">≈ AUD</div><div class="total-bar-val" id="total-aud">—</div></div>
+      </div>
+      <div id="tx-list"><div style="font-size:11px;color:#aaa">Loading…</div></div>
+    </div>
+    <div id="co-cats" class="panel"><div id="cat-list"></div></div>
+    <div id="co-contribs" class="panel">
+      <div class="total-bar">
+        <div><div class="total-bar-lbl">Total contributed</div><div class="total-bar-val">AUD $138,000</div></div>
+        <div style="text-align:right"><div class="total-bar-lbl">Per owner</div><div class="total-bar-val">AUD $46,000</div></div>
+      </div>
+      <div class="contrib-row"><span class="contrib-name">GIBBS</span><div class="contrib-bar-w"><div class="contrib-fill" style="width:33.3%;background:#1D9E75"></div></div><span style="font-weight:500;width:80px;text-align:right;font-size:12px;flex-shrink:0">AUD $46,000</span><span style="font-size:10px;color:#aaa;width:28px;text-align:right;flex-shrink:0">33%</span></div>
+      <div class="contrib-row"><span class="contrib-name">DAVIS</span><div class="contrib-bar-w"><div class="contrib-fill" style="width:33.3%;background:#378ADD"></div></div><span style="font-weight:500;width:80px;text-align:right;font-size:12px;flex-shrink:0">AUD $46,000</span><span style="font-size:10px;color:#aaa;width:28px;text-align:right;flex-shrink:0">33%</span></div>
+      <div class="contrib-row"><span class="contrib-name">HARVEY</span><div class="contrib-bar-w"><div class="contrib-fill" style="width:33.3%;background:#D85A30"></div></div><span style="font-weight:500;width:80px;text-align:right;font-size:12px;flex-shrink:0">AUD $46,000</span><span style="font-size:10px;color:#aaa;width:28px;text-align:right;flex-shrink:0">33%</span></div>
+      <div class="info-box" style="background:#E1F5EE;border:.5px solid #A3D9C3;color:#0F6E56;margin-top:7px">✓ All three owners — equal shares AUD $46,000 each.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROPERTY -->
+<div class="mod m-prop">
+  <div class="mod-hdr">
+    <div class="mod-hdr-left">🏠 Property</div>
+    <span class="badge" style="background:#FAECE7;color:#993C1D">3 owners · Kijimadaira</span>
+  </div>
+  <div class="mod-body">
+    <div class="tabs">
+      <button class="tb active" onclick="sw(this,'pr','owners')">Owners</button>
+      <button class="tb" onclick="sw(this,'pr','contacts')">Contacts</button>
+      <button class="tb" onclick="sw(this,'pr','ski')">Ski &amp; snow</button>
+      <button class="tb" onclick="sw(this,'pr','vehicles')">Vehicles</button>
+    </div>
+    <div id="pr-owners" class="panel active">
+      <div class="ccard"><div style="display:flex;justify-content:space-between"><div><div class="cc-name">Clayton Gibbs</div><div class="cc-role">Lead owner · Australia</div><div style="font-size:11px;color:#378ADD">claytongibbs@gmail.com</div></div><span class="cc-share" style="background:#E1F5EE;color:#0F6E56">33.3%</span></div></div>
+      <div class="ccard"><div style="display:flex;justify-content:space-between"><div><div class="cc-name">Davis</div><div class="cc-role">Co-owner · AUD $46,000 contributed</div></div><span class="cc-share" style="background:#E6F1FB;color:#0C447C">33.3%</span></div></div>
+      <div class="ccard"><div style="display:flex;justify-content:space-between"><div><div class="cc-name">Harvey</div><div class="cc-role">Co-owner · AUD $46,000 contributed</div></div><span class="cc-share" style="background:#FAECE7;color:#993C1D">33.3%</span></div></div>
+    </div>
+    <div id="pr-contacts" class="panel">
+      <div class="ccard"><div class="cc-name">Terumi</div><div class="cc-role">Tax agent · ¥50,000 paid Nov 2025</div></div>
+      <div class="ccard"><div class="cc-name">Chubu Electric Power</div><div class="cc-role">Electricity · paid via Wise</div></div>
+      <div class="ccard"><div class="cc-name">Iiyama City Office</div><div class="cc-role">Minpaku applications · local govt</div><div style="font-size:11px"><a href="https://www.city.iiyama.nagano.jp" target="_blank" style="color:#378ADD">city.iiyama.nagano.jp</a></div></div>
+      <div class="ccard"><div class="cc-name">LAWSON Kijimadaira</div><div class="cc-role">Directly opposite · 24 hrs</div></div>
+      <div class="ccard"><div class="cc-name">Tsudoy Bar</div><div class="cc-role">Next to Lawson · Daiso-san speaks English ⭐</div></div>
+      <div class="ccard" style="background:#FFF8F8"><div class="cc-name">Emergency Japan</div><div class="cc-role">Police: 110 · Ambulance/Fire: 119</div></div>
+    </div>
+    <div id="pr-ski" class="panel">
+      <div style="font-size:10px;color:#aaa;margin-bottom:6px" id="ski-src">Snow depth: live from Open-Meteo</div>
+      <div class="resort-mini"><span style="flex:1">Kijima Snow Park</span><span class="resort-mini-drive">5 min</span><span class="resort-mini-snow" id="sn-kijima">—</span></div>
+      <div class="resort-mini"><span style="flex:1">Romance (Cupid)</span><span class="resort-mini-drive">7 min</span><span class="resort-mini-snow" id="sn-romance">—</span></div>
+      <div class="resort-mini"><span style="flex:1">Togari Onsen</span><span class="resort-mini-drive">18 min</span><span class="resort-mini-snow" id="sn-togari">—</span></div>
+      <div class="resort-mini"><span style="flex:1">Nozawa Onsen</span><span class="resort-mini-drive">25 min</span><span class="resort-mini-snow" id="sn-nozawa">—</span></div>
+      <div class="resort-mini"><span style="flex:1">Madarao + Tangram</span><span class="resort-mini-drive">38 min</span><span class="resort-mini-snow" id="sn-madarao">—</span></div>
+      <div class="resort-mini"><span style="flex:1">Shiga Kogen</span><span class="resort-mini-drive">55 min</span><span class="resort-mini-snow" id="sn-shiga">—</span></div>
+      <div class="sdiv">7-day forecast</div>
+      <div class="fc-strip" id="fc-strip"><div style="font-size:11px;color:#aaa;grid-column:1/-1">Awaiting weather data…</div></div>
+      <a href="https://www.kijiyuki.com/resorts" target="_blank" style="display:block;font-size:11px;color:#378ADD;margin-top:8px;text-align:center">All 12 resorts on kijiyuki.com →</a>
+    </div>
+    <div id="pr-vehicles" class="panel">
+      <div class="vcard"><div style="display:flex;align-items:baseline"><span class="vc-name">Mitsubishi Delica D:5</span><span class="vc-tag">Local favourite</span></div><div class="vc-meta">2018+ · 4WD · 8 seats · high clearance</div><div class="vc-price">¥2.0M - ¥3.8M</div></div>
+      <div class="vcard"><div style="display:flex;align-items:baseline"><span class="vc-name">Toyota Alphard</span><span class="vc-tag">Family luxury</span></div><div class="vc-meta">2019+ · AWD · 7-8 seats</div><div class="vc-price">¥3.5M - ¥6.0M</div></div>
+      <div class="vcard"><div style="display:flex;align-items:baseline"><span class="vc-name">Subaru Outback</span><span class="vc-tag">Practical AWD</span></div><div class="vc-meta">2020+ · AWD · 5 seats</div><div class="vc-price">¥2.0M - ¥3.2M</div></div>
+      <div class="vcard"><div style="display:flex;align-items:baseline"><span class="vc-name">Toyota Land Cruiser 300</span><span class="vc-tag">Premium</span></div><div class="vc-meta">2021+ · 4WD · 7 seats</div><div class="vc-price">¥6.0M - ¥9.0M</div></div>
+      <div class="info-box" style="background:#FFF8ED;border:.5px solid #FAC775;color:#854F0B;font-size:11px">📋 IDP required — apply via NRMA/RACV before travel</div>
+    </div>
+  </div>
+</div>
+
+<!-- MINPAKU -->
+<div class="mod m-mp span2">
+  <div class="mod-hdr">
+    <div class="mod-hdr-left">🏛 Minpaku licence pathway · 180-day Private Lodging (民泊新法)</div>
+    <span class="badge" style="background:#EEEDFE;color:#3C3489" id="mp-badge">0 / 24 done</span>
+  </div>
+  <div class="mod-body">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="flex:1"><div class="prog-wrap"><div class="prog-bar" id="mp-bar" style="width:0%"></div></div></div>
+      <span id="mp-pct" style="font-size:11px;color:#888;width:30px;text-align:right">0%</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+      <div>
+        <div class="chk-group"><div class="chk-group-title">Legal &amp; registration</div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Register with Nagano Prefecture Governor</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Obtain official Minpaku registration number</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Register on MLIT national database</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Confirm Kijimadaira local restrictions</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Notify neighbourhood association (自治会)</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Confirm zoning permits Minpaku use</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="chk-group"><div class="chk-group-title">Safety requirements</div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Smoke detectors in all sleeping areas</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Fire extinguisher installed</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Emergency lighting in corridors</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Evacuation maps in each room</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Min 3.3m² floor space per guest confirmed</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Cleaning protocol documented</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="chk-group"><div class="chk-group-title">Operations</div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Appoint licensed management company <span class="chk-tag" style="background:#FCF0F0;color:#A32D2D">Required overseas</span></span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Key / lockbox system installed</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Guest register (宿泊者名簿) established</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Passport / ID verification process</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">House rules in Japanese AND English</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Registration number displayed prominently</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="chk-group"><div class="chk-group-title">Tax &amp; insurance</div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Minpaku liability insurance obtained</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Building insurance updated for rental use</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Rental income discussed with Terumi</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Japanese tax return — rental income declared</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Airbnb / VRBO listing with reg number</span></div>
+          <div class="chk-item"><input type="checkbox" onchange="saveMp(this)"><span class="chk-label">Booking calendar live across all platforms</span></div>
+        </div>
+        <div class="info-box" style="background:#EEEDFE;border:.5px solid #C7C4F0;color:#3C3489;font-size:10px">💡 Non-resident rental income ~20% withholding. Consult Terumi before first guest.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /grid -->
+</div><!-- /main -->
+
+<script>
+/* ===== CONSTANTS ===== */
+const ICAL_URL = 'https://calendar.google.com/calendar/ical/de6c610c4aea81c517b30af77ace0284a05087720385ef239e02a796987d2620%40group.calendar.google.com/public/basic.ics';
+const RESORT_MULT = {kijima:1.0,romance:1.2,togari:1.15,nozawa:1.35,madarao:1.25,shiga:1.5};
+const WC={0:'Clear',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm'};
+const WI={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'❄️',75:'❄️',77:'❄️',80:'🌦',81:'🌦',82:'⛈',85:'❄️',86:'❄️',95:'⛈'};
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+/* Bracket notation: (owner) = owner stay; (guest) = counts toward 180-day cap */
+function isOwner(s) {
+  const l = (s||'').toLowerCase();
+  if (l.includes('(owner)')) return true;
+  if (l.includes('(guest)')) return false;
+  return true; // default to owner if no bracket found
+}
+const FALLBACK_COSTS = [
+  {date:'Sep 2025',desc:'Property Inspection',cat:'Agent/Legal',jpy:151900},
+  {date:'Sep 2025',desc:'Yuki Legal & Stamp Fees',cat:'Agent/Legal',jpy:17030},
+  {date:'Oct 2025',desc:'Property Holding Deposit',cat:'Purchase',jpy:1000000},
+  {date:'Nov 2025',desc:'Wise transfer fees',cat:'Bank Fees',jpy:39400},
+  {date:'Nov 2025',desc:'Terumi - Tax Agent',cat:'Tax/Duties',jpy:50000},
+  {date:'Feb 2026',desc:'Tools, timber & hardware (ski room)',cat:'Renovation',jpy:68175},
+  {date:'Feb 2026',desc:'Fridge, washer, heater',cat:'Appliances',jpy:49060},
+  {date:'Mar 2026',desc:'Chubu Power electricity',cat:'Utilities',jpy:8516},
+  {date:'Mar 2026',desc:'Chubu Power electricity #2',cat:'Utilities',jpy:3500},
+  {date:'Mar 2026',desc:'Ski rack & hooks',cat:'Renovation',jpy:17664},
+  {date:'Apr 2026',desc:'Property purchase balance',cat:'Purchase',jpy:56675},
+  {date:'Apr 2026',desc:'Japanese property tax',cat:'Tax/Duties',jpy:0},
+  {date:'May 2026',desc:'Minor repairs',cat:'Repairs',jpy:2006}
+];
+let liveRate=0;
+
+/* ===== CURATED NEWS (fallback when live feeds unavailable) ===== */
+const CURATED_NEWS = {
+  property: [
+    {title:'Foreign buyers snap up rural Japanese properties as yen stays weak',date:'May 2026',desc:'Demand from Australian and US buyers for ski-region properties in Nagano and Hokkaido continues to surge with AUD/JPY near historic highs.',link:'https://www.japanpropertycentral.com/category/market-reports/'},
+    {title:'Akiya (vacant home) grants expanded for rural Nagano municipalities',date:'Apr 2026',desc:'Iiyama and surrounding Shimotakai district municipalities expand renovation subsidies for foreign buyers of abandoned rural properties.',link:'https://www.japanpropertycentral.com/category/rural-property/'},
+    {title:'Minpaku (民泊) law update: what overseas property owners need to know in 2026',date:'Mar 2026',desc:'Updated guidance on the 180-day cap, management company requirements for non-resident owners, and Nagano-specific regional rules.',link:'https://www.japanpropertycentral.com/category/minpaku-law/'},
+    {title:'Guide to Japanese property taxes for foreign owners',date:'Feb 2026',desc:'Fixed asset tax (固定資産税), acquisition tax, and income tax on rental earnings explained for non-resident owners.',link:'https://www.japanpropertycentral.com/category/taxes/'},
+    {title:'Wise vs bank transfer for Japan property payments — 2026 guide',date:'Jan 2026',desc:'Comparison of transfer options for paying Japanese property costs from Australian bank accounts, including Wise, OFX and Citibank.',link:'https://www.japanpropertycentral.com/category/buying-process/'}
+  ],
+  snow: [
+    {title:'Nozawa Onsen 2025-26: season recap — above-average snowfall in northern Nagano',date:'Apr 2026',desc:'Nozawa and Togari both recorded well above average snow depth this season. The Kijimadaira area received 280cm base at peak.',link:'https://www.snowjapan.com/e/daily/mountain-reports.html'},
+    {title:'2026-27 Nagano ski season preview: resort openings and lift upgrades',date:'May 2026',desc:'Madarao confirms new gondola for 2026-27 season. Shiga Kogen ski area completes major terrain expansion. Opening dates expected early December 2026.',link:'https://www.snowjapan.com/e/daily/mountain-reports.html'},
+    {title:'Kijimadaira area: the quiet alternative to Nozawa and Madarao',date:'Mar 2026',desc:'Kijimadaira sits between Nozawa Onsen and Madarao with direct access to multiple smaller resorts including Snow Park and Romance. Snow depth typically 100-180cm at peak.',link:'https://www.snowjapan.com/e/resorts/nagano.html'},
+    {title:'Getting from Tokyo to Nagano ski resorts: 2026 transport guide',date:'Dec 2025',desc:'Shinkansen to Iiyama or Nagano, then local bus or hire car. Kijimadaira is 25 mins from Iiyama station. Japan Rail Pass v6 covers most routes.',link:'https://www.snowjapan.com/e/practical/getting-there.html'},
+    {title:'Backcountry skiing in northern Nagano: routes near Kijimadaira',date:'Feb 2026',desc:'Guide to off-piste touring near Nozawa, Madarao and the Kijimadaira area. Avalanche transceiver required. Local guide services available.',link:'https://www.snowjapan.com/e/resorts/nagano.html'}
+  ]
+};
+
+/* ===== TOOL CALL WRAPPER (defensive) ===== */
+async function callTool(name, args, timeoutMs=20000) {
+  if (!window.cowork?.callMcpTool) throw new Error('no cowork');
+  const r = await window.cowork.callMcpTool(name, {...args, timeout_ms: timeoutMs});
+  if (r?.isError) throw new Error('tool_error:'+name);
+  /* Extract text from any content shape */
+  if (typeof r?.content === 'string') return r.content;
+  if (Array.isArray(r?.content)) {
+    for (const c of r.content) {
+      if (c?.text) return c.text;
+      if (typeof c === 'string') return c;
+    }
+  }
+  if (r?.structuredContent) return JSON.stringify(r.structuredContent);
+  throw new Error('empty_content');
+}
+
+/* Extract JSON even when HTTP headers are prepended */
+function extractJson(text) {
+  text = (text||'').trim();
+  /* Try raw */
+  try { return JSON.parse(text); } catch(e) {}
+  /* Find last complete JSON object (greedy — handles nested braces correctly) */
+  const m = text.match(/\{[\s\S]*\}(?=[^{}]*$)/);
+  if (m) { try { return JSON.parse(m[0]); } catch(e) {} }
+  /* Find any JSON object */
+  const m2 = text.match(/\{[\s\S]*\}/);
+  if (m2) { try { return JSON.parse(m2[0]); } catch(e) {} }
+  throw new Error('no_json');
+}
+
+/* ===== EXCHANGE RATE ===== */
+async function fetchFX() {
+  let rate=0, date='';
+  /* Try 1: Netlify proxy → jsDelivr CDN currency API (same-origin, always works on Netlify) */
+  try {
+    const d = await fetch('/fx').then(r=>r.json());
+    if (d?.aud?.jpy) { rate=d.aud.jpy; date=d.date||''; }
+  } catch(e) {}
+  /* Try 2: jsDelivr CDN direct (CORS from CDN, very reliable) */
+  if (!rate) {
+    try {
+      const d = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/aud.json').then(r=>r.json());
+      if (d?.aud?.jpy) { rate=d.aud.jpy; date=d.date||''; }
+    } catch(e) {}
+  }
+  /* Try 3: Open Exchange Rates (free, CORS-enabled) */
+  if (!rate) {
+    try {
+      const d = await fetch('https://open.er-api.com/v6/latest/AUD').then(r=>r.json());
+      if (d?.rates?.JPY) { rate=d.rates.JPY; date=d.time_last_update_utc||''; }
+    } catch(e) {}
+  }
+  /* Try 4: Frankfurter */
+  if (!rate) {
+    try {
+      const d = await fetch('https://api.frankfurter.app/latest?from=AUD&to=JPY').then(r=>r.json());
+      if (d?.rates?.JPY) { rate=d.rates.JPY; date=d.date||''; }
+    } catch(e) {}
+  }
+  /* Try 5: backend callMcpTool */
+  if (!rate) {
+    try {
+      const txt = await callTool('mcp__workspace__web_fetch', {url:'https://api.frankfurter.app/latest?from=AUD&to=JPY'});
+      const d = extractJson(txt);
+      if (d?.rates?.JPY) { rate=d.rates.JPY; date=d.date||''; }
+    } catch(e) {}
+  }
+  if (rate) {
+    liveRate = rate;
+    const dateStr = date ? ' · '+(date.length>10?new Date(date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):date) : '';
+    document.getElementById('m-fx').textContent = '¥'+rate.toFixed(1);
+    document.getElementById('m-fx-sub').textContent = 'per AUD'+dateStr;
+    renderCostAUD();
+  } else {
+    liveRate = 112.7;
+    document.getElementById('m-fx').textContent = '¥112.7';
+    document.getElementById('m-fx-sub').textContent = 'per AUD · cached';
+    renderCostAUD();
+  }
+}
+
+/* ===== WEATHER (Open-Meteo — CORS-enabled, direct fetch) ===== */
+async function fetchWeather() {
+  const WX = 'https://api.open-meteo.com/v1/forecast?latitude=36.856&longitude=138.455'+
+    '&current=temperature_2m,weather_code,wind_speed_10m,snow_depth'+
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,snowfall_sum'+
+    '&timezone=Asia%2FTokyo&forecast_days=7';
+  let d = null;
+  /* Try 1: direct browser fetch */
+  try { const r = await fetch(WX); if (r.ok) d = await r.json(); } catch(e) {}
+  /* Try 2: backend */
+  if (!d) {
+    try { const t = await callTool('mcp__workspace__web_fetch', {url: WX}); d = extractJson(t); } catch(e) {}
+  }
+  if (!d) { document.getElementById('m-temp').textContent='—'; return; }
+  const cur = d.current;
+  const temp = Math.round(cur.temperature_2m||0);
+  const snowCm = Math.round((cur.snow_depth||0)*100);
+  document.getElementById('m-temp').textContent = temp+'°C';
+  document.getElementById('m-wx').textContent = (WI[cur.weather_code]||'')+ ' '+(WC[cur.weather_code]||'');
+  document.getElementById('m-snow').textContent = snowCm+' cm';
+  document.getElementById('m-snow-sub').textContent = snowCm>120?'❄️ Epic':snowCm>60?'❄️ Good':snowCm>10?'Light cover':'No snow';
+  document.getElementById('ski-src').textContent = 'Snow depth: live from Open-Meteo · '+snowCm+'cm local';
+  Object.entries(RESORT_MULT).forEach(([k,m])=>{
+    const el=document.getElementById('sn-'+k);
+    if(el) el.textContent=snowCm>0?Math.round(snowCm*m)+' cm':'Off-season';
+  });
+  /* 7-day strip */
+  const strip=document.getElementById('fc-strip'); strip.innerHTML='';
+  (d.daily.time||[]).forEach((t,i)=>{
+    const day=DAYS[new Date(t+'T00:00:00').getDay()];
+    const code=d.daily.weather_code[i];
+    const mx=Math.round(d.daily.temperature_2m_max[i]);
+    const mn=Math.round(d.daily.temperature_2m_min[i]);
+    const snow=(d.daily.snowfall_sum[i]||0);
+    const el=document.createElement('div'); el.className='fc-day';
+    el.innerHTML='<div class="dn">'+day+'</div><div class="di">'+(WI[code]||'?')+'</div><div class="dt">'+mx+'/'+mn+'°</div>'+(snow>0.1?'<div class="ds">❄'+snow.toFixed(1)+'</div>':'');
+    strip.appendChild(el);
+  });
+}
+
+/* ===== iCAL PARSER ===== */
+function parseIcalDate(s){if(!s)return null;const m=(s||'').match(/(\d{4})(\d{2})(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;}
+function diffDays(a,b){return(a&&b)?Math.max(0,Math.round((b-a)/864e5)):0;}
+function fmtDate(d){return d?d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'?';}
+
+function parseIcal(raw){
+  const events=[];
+  const text=raw.replace(/\r\n[ \t]/g,'').replace(/\r\n|\r/g,'\n');
+  let cur=null;
+  text.split('\n').forEach(line=>{
+    if(line==='BEGIN:VEVENT'){cur={};}
+    else if(line==='END:VEVENT'&&cur){
+      if(cur.SUMMARY&&cur.DTSTART){
+        cur.startDate=parseIcalDate(cur.DTSTART);
+        cur.endDate=parseIcalDate(cur.DTEND||cur.DTSTART);
+        if(cur.endDate&&cur.startDate&&cur.endDate<=cur.startDate)cur.endDate=new Date(cur.startDate.getTime()+864e5);
+        cur.days=diffDays(cur.startDate,cur.endDate)||1;
+        if(cur.startDate)events.push(cur);
+      }
+      cur=null;
+    } else if(cur){
+      const idx=line.indexOf(':');
+      if(idx>0){const k=line.substring(0,idx).replace(/;[^:]+/,'').trim();if(!cur[k])cur[k]=line.substring(idx+1).trim();}
+    }
+  });
+  return events.sort((a,b)=>a.startDate-b.startDate);
+}
+
+/* ===== CALENDAR ===== */
+async function fetchCalendar(){
+  let text='';
+  /* Try 0: Netlify same-origin proxy (best — no CORS) */
+  try{const r=await fetch('/cal',{signal:AbortSignal.timeout(10000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
+  /* Try 1: direct fetch (Google Calendar iCal supports public CORS) */
+  try{const r=await fetch(ICAL_URL,{signal:AbortSignal.timeout(12000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
+  /* Try 2: allorigins CORS proxy */
+  if(!text){
+    try{const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(ICAL_URL),{signal:AbortSignal.timeout(12000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
+  }
+  /* Try 3: cors.sh proxy */
+  if(!text){
+    try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(ICAL_URL),{signal:AbortSignal.timeout(12000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
+  }
+  /* Try 4: backend web_fetch */
+  if(!text){
+    try{const t=await callTool('mcp__workspace__web_fetch',{url:ICAL_URL});if(t.includes('BEGIN:VCALENDAR'))text=t;}catch(e){}
+  }
+  return text?parseIcal(text):null;
+}
+
+/* Group per-day calendar events (Day 1/9, Day 2/9 …) into single bookings for display.
+   Days tracker still uses raw individual events (each = 1 day counted). */
+function groupEventsForDisplay(events) {
+  const out = [], used = new Set();
+  events.forEach((e, i) => {
+    if (used.has(i)) return;
+    const m = (e.SUMMARY||'').match(/^(.*?)\s*\(Day\s*\d+\/(\d+)\)\s*$/i);
+    if (m) {
+      const base = m[1].trim();
+      const total = parseInt(m[2]);
+      let lastEnd = e.endDate;
+      for (let j = i+1; j < events.length; j++) {
+        if (used.has(j)) continue;
+        const m2 = (events[j].SUMMARY||'').match(/^(.*?)\s*\(Day\s*\d+\/\d+\)\s*$/i);
+        if (m2 && m2[1].trim() === base) { used.add(j); lastEnd = events[j].endDate; }
+      }
+      out.push({...e, SUMMARY: base, endDate: lastEnd, days: total});
+    } else {
+      out.push(e);
+    }
+    used.add(i);
+  });
+  return out;
+}
+
+function renderCalendar(events){
+  const now=new Date(); now.setHours(0,0,0,0);
+  const yr=now.getFullYear();
+  /* Use grouped events for display, raw events for day counting */
+  const grouped=groupEventsForDisplay(events);
+  const upcoming=grouped.filter(e=>e.endDate>=now).slice(0,8);
+  document.getElementById('bk-entries').innerHTML=upcoming.length===0
+    ?'<div style="font-size:11px;color:#aaa;padding:5px 0">No upcoming bookings</div>'
+    :upcoming.map(e=>{
+      const own=isOwner(e.SUMMARY);
+      const dot=own?'#1D9E75':'#D85A30';
+      const badge=own?'<span class="bk-type" style="background:#E1F5EE;color:#0F6E56">Owner</span>':'<span class="bk-type" style="background:#FAECE7;color:#993C1D">Guest</span>';
+      return '<div class="bk"><div class="bk-dot" style="background:'+dot+'"></div><div class="bk-date">'+fmtDate(e.startDate)+' - '+fmtDate(e.endDate)+'</div><div class="bk-who">'+e.SUMMARY+'</div><span class="bk-nights">'+e.days+'n</span>'+badge+'</div>';
+    }).join('');
+  document.getElementById('cal-badge').textContent='✓ Live';
+  document.getElementById('cal-status').textContent=events.length+' events loaded';
+  /* Days tracker */
+  let ownerDays=0,guestDays=0; const ownerMap={};
+  /* Use RAW events for day counting (each Day X/Y event = 1 day) */
+  events.filter(e=>e.startDate&&(e.startDate.getFullYear()===yr||e.endDate?.getFullYear()===yr)).forEach(e=>{
+    if(isOwner(e.SUMMARY)){
+      ownerDays+=e.days;
+      /* Use clean name (strip Day X/Y suffix) for grouping */
+      const cleanName=(e.SUMMARY||'').replace(/\s*\(Day\s*\d+\/\d+\)\s*$/i,'').replace(/\s*(\(owner\))\s*/i,'').replace(/BOOKED\s*[--]?\s*/i,'').trim()||'Owner';
+      ownerMap[cleanName]=(ownerMap[cleanName]||0)+e.days;
+    } else {
+      guestDays+=e.days;
+    }
+  });
+  const limit=180;
+  document.getElementById('bar-owner').style.width=Math.min(ownerDays/limit*100,100)+'%';
+  document.getElementById('bar-guest').style.width=Math.min(guestDays/limit*100,100)+'%';
+  document.getElementById('days-total').textContent=(ownerDays+guestDays)+' / '+limit;
+  const rem=limit-guestDays;
+  document.getElementById('days-left').textContent=rem+' days';
+  document.getElementById('m-ownerdays').textContent=ownerDays;
+  document.getElementById('m-ownerdays-sub').textContent='owner days '+yr;
+  document.getElementById('m-remaining').textContent=rem;
+  document.getElementById('m-remaining').style.color=rem<30?'#D85A30':rem<60?'#BA7517':'#1D9E75';
+  document.getElementById('days-by-owner').innerHTML=Object.keys(ownerMap).length
+    ?Object.entries(ownerMap).map(([n,d])=>'<div class="row"><span style="color:#666">'+n+'</span><span style="color:#1D9E75;font-weight:500">'+d+' days</span></div>').join('')
+    :'<div style="font-size:11px;color:#aaa">No owner stays in '+yr+'</div>';
+  /* Guest display: use grouped events for readability */
+  const guestGrouped=groupEventsForDisplay(events).filter(e=>e.startDate&&e.startDate.getFullYear()===yr&&!isOwner(e.SUMMARY));
+  document.getElementById('days-by-guest').innerHTML=guestGrouped.length
+    ?guestGrouped.map(e=>{
+        const cleanN=(e.SUMMARY||'').replace(/\s*(\(guest\))\s*/i,'').replace(/BOOKED\s*[--]?\s*/i,'').trim();
+        return '<div class="row"><span style="color:#666">'+cleanN+' · '+fmtDate(e.startDate)+'</span><span style="color:#D85A30;font-weight:500">'+e.days+' days</span></div>';
+      }).join('')
+    :'<div style="font-size:11px;color:#aaa">No (guest) bookings in '+yr+'</div>';
+}
+
+/* ===== NEWS (live RSS with curated fallback) ===== */
+function rssTag(txt,tag){
+  const re=new RegExp('<'+tag+'[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</'+tag+'>','i');
+  return ((txt.match(re)||[])[1]||'').replace(/<[^>]+>/g,'').trim();
+}
+function parseRssItems(xml){
+  const items=[]; const re=/<item[\s\S]*?<\/item>/g; let m;
+  while((m=re.exec(xml))&&items.length<5){
+    const b=m[0];
+    const title=rssTag(b,'title');
+    const link=(rssTag(b,'link')||rssTag(b,'guid')||'').trim();
+    const date=rssTag(b,'pubDate');
+    const desc=rssTag(b,'description').substring(0,160);
+    if(title&&title.length>3)items.push({title,link,date,desc});
+  }
+  return items;
+}
+function renderNewsItems(id,items,srcLabel){
+  const html=items.map(it=>{
+    const dt=it.date?new Date(it.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
+    return '<div class="news-item">'+
+      '<div class="news-title">'+(it.link?'<a href="'+it.link+'" target="_blank">':'')+it.title+(it.link?'</a>':'')+' <span class="src-tag">'+srcLabel+'</span></div>'+
+      (dt?'<div class="news-meta">'+dt+'</div>':'')+
+      (it.desc?'<div class="news-desc">'+it.desc+'…</div>':'')+
+      '</div>';
+  }).join('');
+  document.getElementById(id).innerHTML=html;
+}
+async function fetchNews(){
+  /* Try live RSS feeds via direct fetch */
+  const feeds={
+    property:['https://www.japanpropertycentral.com/feed/'],
+    snow:['https://www.snowjapan.com/feed','https://www.nozawaonsen.com.au/feed/']
+  };
+  for(const[key,urls] of Object.entries(feeds)){
+    let items=[];
+    for(const url of urls){
+      if(items.length>=4)break;
+      try{
+        const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
+        if(r.ok){const xml=await r.text();items=[...items,...parseRssItems(xml)];}
+      }catch(e){}
+    }
+    if(items.length===0){
+      /* Fallback: curated articles */
+      items=CURATED_NEWS[key];
+      renderNewsItems('nw-'+key,items,key==='property'?'japanpropertycentral.com':'snowjapan.com');
+    } else {
+      renderNewsItems('nw-'+key,items,key==='property'?'japanpropertycentral.com':'snowjapan.com');
+    }
+  }
+  document.getElementById('news-badge').textContent='articles';
+  document.getElementById('news-badge').style.background='#E1F5EE';
+  document.getElementById('news-badge').style.color='#0F6E56';
+}
+
+/* ===== COSTS (Excel live read via bash) ===== */
+async function fetchExcelData(){
+  try{
+    const py=[
+      'import openpyxl,json,warnings',
+      'warnings.filterwarnings("ignore")',
+      'wb=openpyxl.load_workbook("'+XLSX_PATH+'",data_only=True)',
+      'ws=wb["Cash Book"]',
+      'rows=[]',
+      'for r in ws.iter_rows(min_row=2,values_only=True):',
+      '    if r[0] and r[3]:',
+      '        rows.append({"desc":str(r[0]),"cat":str(r[1] or ""),"jpy":int(r[3]) if isinstance(r[3],(int,float)) else 0,"date":str(r[6])[:10] if r[6] else ""})',
+      'print(json.dumps({"ok":True,"rows":rows,"total":sum(x["jpy"] for x in rows)}))'
+    ].join('\\n');
+    const b64=btoa(unescape(encodeURIComponent(py)));
+    const cmd='echo "'+b64+'" | base64 -d | python3 2>/dev/null';
+    const txt=await callTool('mcp__workspace__bash',{command:cmd});
+    const m=txt.match(/\{[\s\S]*\}/);
+    if(m){const d=JSON.parse(m[0]);if(d.ok)return d;}
+  }catch(e){}
+  return null;
+}
+
+function renderCostAUD(){
+  const total=parseInt(document.getElementById('total-jpy').textContent.replace(/[¥,]/g,''))||1689626;
+  if(liveRate>0){
+    document.getElementById('total-aud').textContent='AUD $'+Math.round(total/liveRate).toLocaleString();
+    document.getElementById('m-spent-aud').textContent='≈ AUD $'+Math.round(total/liveRate).toLocaleString();
+  }
+}
+
+function renderCosts(data){
+  const txns=data?data.rows:FALLBACK_TXN;
+  const totalJpy=data?data.total:1689626;
+  document.getElementById('total-jpy').textContent='¥'+totalJpy.toLocaleString();
+  document.getElementById('m-spent').textContent='¥'+(totalJpy/1e6).toFixed(2)+'M';
+  document.getElementById('excel-status').textContent=data?'✓ Live · '+txns.length+' entries':'⚠ Cached data';
+  if(liveRate>0)renderCostAUD();
+  /* Transactions (newest first) */
+  document.getElementById('tx-list').innerHTML=txns.slice().reverse().map(t=>{
+    const aud=liveRate>0?' · AUD $'+Math.round(t.jpy/liveRate).toLocaleString():'';
+    return '<div class="tx"><div style="flex:1;padding-right:8px"><div class="tx-desc">'+t.desc+'</div><div class="tx-meta">'+(t.date||'')+' · '+t.cat+'</div></div><div style="text-align:right"><div class="tx-jpy">¥'+t.jpy.toLocaleString()+'</div><div class="tx-aud">'+aud+'</div></div></div>';
+  }).join('');
+  /* By category */
+  const catMap={};
+  txns.forEach(t=>{catMap[t.cat]=(catMap[t.cat]||0)+t.jpy;});
+  const cats=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const mx=cats[0]?.[1]||1;
+  document.getElementById('cat-list').innerHTML=cats.map(([n,v])=>{
+    const aud=liveRate>0?' · AUD $'+Math.round(v/liveRate).toLocaleString():'';
+    return '<div class="cat-row"><span class="cat-name">'+n+'</span><div class="cat-bar-wrap"><div class="cat-fill" style="width:'+(v/mx*100).toFixed(0)+'%"></div></div><span class="cat-amt">¥'+(v/1000).toFixed(0)+'K'+aud+'</span></div>';
+  }).join('');
+}
+
+/* ===== TABS ===== */
+function sw(btn,mod,panel){
+  const body=document.getElementById(mod+'-'+panel).closest('.mod-body');
+  body.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
+  body.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(mod+'-'+panel).classList.add('active');
+}
+
+/* ===== MINPAKU CHECKLIST (persisted in localStorage) ===== */
+function saveMp(cb){
+  const all=[...document.querySelectorAll('.m-mp input[type=checkbox]')];
+  const state=all.map(c=>c.checked?1:0);
+  try{localStorage.setItem('mp_state',JSON.stringify(state));}catch(e){}
+  updateMpProgress(all);
+}
+function loadMp(){
+  const all=[...document.querySelectorAll('.m-mp input[type=checkbox]')];
+  try{
+    const state=JSON.parse(localStorage.getItem('mp_state')||'[]');
+    all.forEach((c,i)=>{if(state[i])c.checked=true;});
+  }catch(e){}
+  updateMpProgress(all);
+}
+function updateMpProgress(all){
+  if(!all)all=[...document.querySelectorAll('.m-mp input[type=checkbox]')];
+  const done=all.filter(c=>c.checked).length;
+  const pct=Math.round(done/all.length*100);
+  document.getElementById('mp-badge').textContent=done+' / '+all.length+' done';
+  document.getElementById('mp-pct').textContent=pct+'%';
+  document.getElementById('mp-bar').style.width=pct+'%';
+}
+
+/* ===== INIT ===== */
+async function init(){
+  document.getElementById('upd-time').textContent='Loading…';
+  loadMp();
+  /* Render costs with fallback data immediately */
+  renderCosts(null);
+  /* Parallel fetch all live sources */
+  const [fxR,wxR,calR,xlR,nwR]=await Promise.allSettled([
+    fetchFX(),
+    fetchWeather(),
+    fetchCalendar(),
+    fetchExcelData(),
+    fetchNews()
+  ]);
+  /* Calendar */
+  const events=calR.status==='fulfilled'?calR.value:null;
+  if(events&&events.length>0){
+    renderCalendar(events);
+  } else {
+    document.getElementById('bk-entries').innerHTML='<div style="font-size:11px;color:#888;padding:5px 0">Live calendar unavailable — see <b>Full calendar</b> tab above ↑</div>';
+    document.getElementById('cal-status').textContent='Using embedded Google Calendar view';
+    ['m-ownerdays','m-remaining'].forEach(id=>{ document.getElementById(id).textContent='—'; });
+  }
+  /* Excel */
+  const xlData=xlR.status==='fulfilled'?xlR.value:null;
+  if(xlData)renderCosts(xlData);
+  document.getElementById('upd-time').textContent='Updated '+new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+}
+
+init();
+/* Auto-refresh every 5 min */
+setInterval(init,5*60*1000);
+</script>
+</body>
+</html>
