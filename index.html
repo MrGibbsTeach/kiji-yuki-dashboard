@@ -457,13 +457,13 @@ async function fetchFX() {
   let rate=0, date='';
   /* Try 1: Netlify proxy → jsDelivr CDN currency API (same-origin, always works on Netlify) */
   try {
-    const d = await fetch('/fx').then(r=>r.json());
+    const d = await fetch('/fx',{signal:AbortSignal.timeout(6000)}).then(r=>r.json());
     if (d?.aud?.jpy) { rate=d.aud.jpy; date=d.date||''; }
   } catch(e) {}
   /* Try 2: jsDelivr CDN direct (CORS from CDN, very reliable) */
   if (!rate) {
     try {
-      const d = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/aud.json').then(r=>r.json());
+      const d = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/aud.json',{signal:AbortSignal.timeout(6000)}).then(r=>r.json());
       if (d?.aud?.jpy) { rate=d.aud.jpy; date=d.date||''; }
     } catch(e) {}
   }
@@ -511,7 +511,7 @@ async function fetchWeather() {
     '&timezone=Asia%2FTokyo&forecast_days=7';
   let d = null;
   /* Try 1: direct browser fetch */
-  try { const r = await fetch(WX); if (r.ok) d = await r.json(); } catch(e) {}
+  try { const r = await fetch(WX, {signal:AbortSignal.timeout(8000)}); if (r.ok) d = await r.json(); } catch(e) {}
   /* Try 2: backend */
   if (!d) {
     try { const t = await callTool('mcp__workspace__web_fetch', {url: WX}); d = extractJson(t); } catch(e) {}
@@ -820,12 +820,13 @@ async function init(){
   /* Render costs with fallback data immediately */
   renderCosts(null);
   /* Parallel fetch all live sources */
+  const tout=ms=>new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms));
   const [fxR,wxR,calR,xlR,nwR]=await Promise.allSettled([
-    fetchFX(),
-    fetchWeather(),
-    fetchCalendar(),
-    fetchExcelData(),
-    fetchNews()
+    Promise.race([fetchFX(),tout(10000)]),
+    Promise.race([fetchWeather(),tout(12000)]),
+    Promise.race([fetchCalendar(),tout(15000)]),
+    Promise.race([fetchExcelData(),tout(8000)]),
+    Promise.race([fetchNews(),tout(10000)])
   ]);
   /* Calendar */
   const events=calR.status==='fulfilled'?calR.value:null;
