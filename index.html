@@ -467,28 +467,7 @@ async function fetchFX() {
       if (d?.aud?.jpy) { rate=d.aud.jpy; date=d.date||''; }
     } catch(e) {}
   }
-  /* Try 3: Open Exchange Rates (free, CORS-enabled) */
-  if (!rate) {
-    try {
-      const d = await fetch('https://open.er-api.com/v6/latest/AUD').then(r=>r.json());
-      if (d?.rates?.JPY) { rate=d.rates.JPY; date=d.time_last_update_utc||''; }
-    } catch(e) {}
-  }
-  /* Try 4: Frankfurter */
-  if (!rate) {
-    try {
-      const d = await fetch('https://api.frankfurter.app/latest?from=AUD&to=JPY').then(r=>r.json());
-      if (d?.rates?.JPY) { rate=d.rates.JPY; date=d.date||''; }
-    } catch(e) {}
-  }
-  /* Try 5: backend callMcpTool */
-  if (!rate) {
-    try {
-      const txt = await callTool('mcp__workspace__web_fetch', {url:'https://api.frankfurter.app/latest?from=AUD&to=JPY'});
-      const d = extractJson(txt);
-      if (d?.rates?.JPY) { rate=d.rates.JPY; date=d.date||''; }
-    } catch(e) {}
-  }
+
   if (rate) {
     liveRate = rate;
     const dateStr = date ? ' · '+(date.length>10?new Date(date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):date) : '';
@@ -575,18 +554,12 @@ function parseIcal(raw){
 async function fetchCalendar(){
   let text='';
   /* Try 0: Netlify same-origin proxy (best — no CORS) */
-  try{const r=await fetch('/cal',{signal:AbortSignal.timeout(10000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
-  /* Try 1: direct fetch (Google Calendar iCal supports public CORS) */
-  try{const r=await fetch(ICAL_URL,{signal:AbortSignal.timeout(12000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
+  try{const r=await fetch('/cal',{signal:AbortSignal.timeout(6000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
   /* Try 2: allorigins CORS proxy */
   if(!text){
-    try{const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(ICAL_URL),{signal:AbortSignal.timeout(12000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
+    try{const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(ICAL_URL),{signal:AbortSignal.timeout(8000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
   }
-  /* Try 3: cors.sh proxy */
-  if(!text){
-    try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(ICAL_URL),{signal:AbortSignal.timeout(12000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))text=t;}}catch(e){}
-  }
-  /* Try 4: backend web_fetch */
+  /* Try 3: backend web_fetch */
   if(!text){
     try{const t=await callTool('mcp__workspace__web_fetch',{url:ICAL_URL});if(t.includes('BEGIN:VCALENDAR'))text=t;}catch(e){}
   }
@@ -820,13 +793,12 @@ async function init(){
   /* Render costs with fallback data immediately */
   renderCosts(null);
   /* Parallel fetch all live sources */
-  const tout=ms=>new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms));
   const [fxR,wxR,calR,xlR,nwR]=await Promise.allSettled([
-    Promise.race([fetchFX(),tout(10000)]),
-    Promise.race([fetchWeather(),tout(12000)]),
-    Promise.race([fetchCalendar(),tout(15000)]),
-    Promise.race([fetchExcelData(),tout(8000)]),
-    Promise.race([fetchNews(),tout(10000)])
+    fetchFX(),
+    fetchWeather(),
+    fetchCalendar(),
+    fetchExcelData(),
+    fetchNews()
   ]);
   /* Calendar */
   const events=calR.status==='fulfilled'?calR.value:null;
