@@ -792,19 +792,19 @@ function init(){
   loadMp();
   renderCosts(null); /* immediate fallback costs */
 
-  /* Fire all fetches independently — each renders its own result */
-  fetchFX().catch(()=>{
+  /* Fire all fetches independently — Promise.resolve() ensures .then/.catch work even on non-async functions */
+  Promise.resolve(fetchFX()).catch(()=>{
     liveRate=112.7;
     document.getElementById('m-fx').textContent='¥112.7';
     document.getElementById('m-fx-sub').textContent='per AUD · cached';
     renderCostAUD();
   });
 
-  fetchWeather().catch(()=>{
+  Promise.resolve(fetchWeather()).catch(()=>{
     document.getElementById('m-temp').textContent='—';
   });
 
-  fetchCalendar().then(events=>{
+  Promise.resolve(fetchCalendar()).then(events=>{
     if(events&&events.length>0){
       renderCalendar(events);
     } else {
@@ -817,9 +817,9 @@ function init(){
     ['m-ownerdays','m-remaining'].forEach(id=>{ document.getElementById(id).textContent='—'; });
   });
 
-  fetchExcelData().then(d=>{ if(d) renderCosts(d); }).catch(()=>{});
+  Promise.resolve(fetchExcelData()).then(d=>{ if(d) renderCosts(d); }).catch(()=>{});
 
-  fetchNews().catch(()=>{});
+  Promise.resolve(fetchNews()).catch(()=>{});
 
   /* Update timestamp after 15s regardless of fetch status */
   setTimeout(()=>{
