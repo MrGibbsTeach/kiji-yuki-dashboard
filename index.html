@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kiji Yuki · Live Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏔</text></svg>">
 <style>
 :root{color-scheme:light}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -701,6 +702,13 @@ async function fetchNews(){
 
 /* ===== COSTS (Excel live read via bash) ===== */
 async function fetchExcelData(){
+  /* Try 0: /costs.json (same-origin Netlify file — most reliable) */
+  return fetch('/costs.json',{signal:AbortSignal.timeout(5000)})
+    .then(r=>r.ok?r.json():Promise.reject())
+    .then(arr=>({rows:arr, total:arr.reduce((s,r)=>s+(r.jpy||0),0)}))
+    .catch(()=>fetchExcelDataFromBash());
+}
+async function fetchExcelDataFromBash(){
   try{
     const py=[
       'import openpyxl,json,warnings',
