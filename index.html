@@ -731,7 +731,7 @@ function renderCostAUD(){
 }
 
 function renderCosts(data){
-  const txns=data?data.rows:FALLBACK_TXN;
+  const txns=data?data.rows:FALLBACK_COSTS;
   const totalJpy=data?data.total:1689626;
   document.getElementById('total-jpy').textContent='¥'+totalJpy.toLocaleString();
   document.getElementById('m-spent').textContent='¥'+(totalJpy/1e6).toFixed(2)+'M';
