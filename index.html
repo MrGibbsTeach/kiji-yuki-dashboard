@@ -787,32 +787,44 @@ function updateMpProgress(all){
 }
 
 /* ===== INIT ===== */
-async function init(){
+function init(){
   document.getElementById('upd-time').textContent='Loading…';
   loadMp();
-  /* Render costs with fallback data immediately */
-  renderCosts(null);
-  /* Parallel fetch all live sources */
-  const [fxR,wxR,calR,xlR,nwR]=await Promise.allSettled([
-    fetchFX(),
-    fetchWeather(),
-    fetchCalendar(),
-    fetchExcelData(),
-    fetchNews()
-  ]);
-  /* Calendar */
-  const events=calR.status==='fulfilled'?calR.value:null;
-  if(events&&events.length>0){
-    renderCalendar(events);
-  } else {
-    document.getElementById('bk-entries').innerHTML='<div style="font-size:11px;color:#888;padding:5px 0">Live calendar unavailable — see <b>Full calendar</b> tab above ↑</div>';
-    document.getElementById('cal-status').textContent='Using embedded Google Calendar view';
+  renderCosts(null); /* immediate fallback costs */
+
+  /* Fire all fetches independently — each renders its own result */
+  fetchFX().catch(()=>{
+    liveRate=112.7;
+    document.getElementById('m-fx').textContent='¥112.7';
+    document.getElementById('m-fx-sub').textContent='per AUD · cached';
+    renderCostAUD();
+  });
+
+  fetchWeather().catch(()=>{
+    document.getElementById('m-temp').textContent='—';
+  });
+
+  fetchCalendar().then(events=>{
+    if(events&&events.length>0){
+      renderCalendar(events);
+    } else {
+      document.getElementById('bk-entries').innerHTML='<div style="font-size:11px;color:#888;padding:5px 0">Live calendar unavailable — see <b>Full calendar</b> tab above ↑</div>';
+      document.getElementById('cal-status').textContent='Using embedded Google Calendar view';
+      ['m-ownerdays','m-remaining'].forEach(id=>{ document.getElementById(id).textContent='—'; });
+    }
+  }).catch(()=>{
+    document.getElementById('bk-entries').innerHTML='<div style="font-size:11px;color:#888;padding:5px 0">Calendar unavailable — see <b>Full calendar</b> tab ↑</div>';
     ['m-ownerdays','m-remaining'].forEach(id=>{ document.getElementById(id).textContent='—'; });
-  }
-  /* Excel */
-  const xlData=xlR.status==='fulfilled'?xlR.value:null;
-  if(xlData)renderCosts(xlData);
-  document.getElementById('upd-time').textContent='Updated '+new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+  });
+
+  fetchExcelData().then(d=>{ if(d) renderCosts(d); }).catch(()=>{});
+
+  fetchNews().catch(()=>{});
+
+  /* Update timestamp after 15s regardless of fetch status */
+  setTimeout(()=>{
+    document.getElementById('upd-time').textContent='Updated '+new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+  }, 15000);
 }
 
 init();
